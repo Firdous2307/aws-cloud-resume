@@ -5,6 +5,17 @@ Description: >
 
   Sample SAM Template for cloud-resume-challenge
 
+Parameters:
+  S3BucketParameter:
+    Type: "AWS::SSM::Parameter::Value<String>"
+    Default: "/cloud-resume-challenge/S3BucketName"
+    Description: "Parameter Store path for the S3 bucket name"
+
+  S3OriginIdParameter:
+    Type: "AWS::SSM::Parameter::Value<String>"
+    Default: "/cloud-resume-challenge/S3OriginId"
+    Description: "Parameter Store path for the S3 origin ID"
+
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
@@ -36,6 +47,28 @@ Resources:
             Action:
               - 's3:GetObject'
             Resource: !Join ['', ['arn:aws:s3:::', !Ref NewWebsite, '/*']]
+  
+  MyDistribution:
+    Type: "AWS::CloudFront::Distribution"
+    Properties:
+      DistributionConfig:
+        DefaultCacheBehavior:
+          ViewerProtocolPolicy: allow-all
+          TargetOriginId: !Ref S3OriginIdParameter
+          DefaultTTL: 0
+          MinTTL: 0
+          MaxTTL: 0
+          ForwardedValues:
+            QueryString: false
+        Origins:
+          - DomainName: !Sub "${S3BucketParameter}.s3-website.${AWS::Region}.amazonaws.com"
+            Id: !Ref S3OriginIdParameter
+            CustomOriginConfig:
+              OriginProtocolPolicy: match-viewer
+        Enabled: "true"
+        DefaultRootObject: index.html
+
+          
             
   HelloWorldFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
